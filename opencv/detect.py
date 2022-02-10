@@ -35,6 +35,7 @@ from pycoral.adapters.detect import get_objects
 from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
 from pycoral.utils.edgetpu import run_inference
+import datetime
 
 def main():
     default_model_dir = '../all_models'
@@ -62,6 +63,8 @@ def main():
 
     while cap.isOpened():
         ret, frame = cap.read()
+        start_time = datetime.datetime.now()
+        num_frames = 0
         if not ret:
             break
         cv2_im = frame
@@ -71,7 +74,11 @@ def main():
         run_inference(interpreter, cv2_im_rgb.tobytes())
         objs = get_objects(interpreter, args.threshold)[:args.top_k]
         cv2_im = append_objs_to_img(cv2_im, inference_size, objs, labels)
-
+        # Calculate Frames per second (FPS)
+        num_frames += 1
+        elapsed_time = (datetime.datetime.now() - start_time).total_seconds()
+        fps = num_frames / elapsed_time
+        cv2.putText(objs, "FPS: " + str("{0:.2f}".format(fps)), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (77, 255, 9), 2)
         cv2.imshow('frame', cv2_im)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
